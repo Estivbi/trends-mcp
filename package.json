@@ -1,0 +1,47 @@
+{
+  "name": "trends-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for trends monitoring with LLM integration",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "mcp"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:mcp\"",
+    "dev:backend": "cd apps/backend-api && npm run dev",
+    "dev:frontend": "cd apps/frontend-astro && npm run dev",
+    "dev:mcp": "cd mcp && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend && npm run build:mcp",
+    "build:backend": "cd apps/backend-api && npm run build",
+    "build:frontend": "cd apps/frontend-astro && npm run build",
+    "build:mcp": "cd mcp && npm run build",
+    "test": "npm run test:backend",
+    "test:backend": "cd apps/backend-api && npm run test",
+    "lint": "npm run lint:backend && npm run lint:frontend",
+    "lint:backend": "cd apps/backend-api && npm run lint",
+    "lint:frontend": "cd apps/frontend-astro && npm run lint",
+    "mcp": "cd mcp && npm run mcp",
+    "inspector": "cd mcp && npm run inspector"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "trends",
+    "llm",
+    "astro",
+    "nodejs",
+    "mongodb",
+    "scraper"
+  ],
+  "author": "Carolina",
+  "license": "MIT"
+}

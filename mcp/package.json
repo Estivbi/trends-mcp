@@ -1,0 +1,27 @@
+{
+  "name": "@trends-mcp/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for trends monitoring with LLM integration",
+  "main": "dist/trends-server.js",
+  "scripts": {
+    "dev": "tsx trends-server.ts",
+    "build": "tsc",
+    "start": "node dist/trends-server.js",
+    "mcp": "tsx trends-server.ts",
+    "inspector": "npx @modelcontextprotocol/inspector npx tsx trends-server.ts"
+  },
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

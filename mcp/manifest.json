@@ -1,0 +1,143 @@
+{
+  "name": "trends_tool",
+  "version": "1.0.0",
+  "description": "Permite a LLMs consultar tendencias y recibir resúmenes/ideas de contenido",
+  "server_url": "https://api.tuservicio.com/mcp",
+  "endpoints": [
+    {
+      "name": "get_trends",
+      "method": "GET",
+      "url": "/get_trends",
+      "description": "Devuelve tendencias filtradas por categoría, fecha, fuente y idioma",
+      "parameters": {
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Fecha en formato YYYY-MM-DD",
+          "required": false
+        },
+        "category": {
+          "type": "string",
+          "description": "Categoría de tendencias (ej: musica, gaming, noticias, entretenimiento)",
+          "required": false
+        },
+        "source": {
+          "type": "string",
+          "enum": ["youtube", "twitter", "tiktok", "reddit", "news"],
+          "description": "Fuente de las tendencias",
+          "required": false
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 10,
+          "description": "Número máximo de tendencias a devolver",
+          "required": false
+        },
+        "language": {
+          "type": "string",
+          "default": "es",
+          "description": "Idioma de las tendencias",
+          "required": false
+        }
+      }
+    },
+    {
+      "name": "get_trend_detail",
+      "method": "GET",
+      "url": "/get_trend_detail",
+      "description": "Obtiene detalles específicos de una tendencia por ID",
+      "parameters": {
+        "id": {
+          "type": "string",
+          "description": "ID único de la tendencia",
+          "required": true
+        }
+      }
+    },
+    {
+      "name": "search_trends",
+      "method": "GET",
+      "url": "/search_trends",
+      "description": "Busca tendencias por texto usando búsqueda semántica",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "description": "Término de búsqueda",
+          "required": true
+        },
+        "category": {
+          "type": "string",
+          "description": "Filtrar por categoría específica",
+          "required": false
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "default": 10,
+          "description": "Número máximo de resultados",
+          "required": false
+        }
+      }
+    },
+    {
+      "name": "generate_summary",
+      "method": "POST",
+      "url": "/generate_summary",
+      "description": "Genera un resumen ejecutivo de tendencias actuales",
+      "parameters": {
+        "category": {
+          "type": "string",
+          "description": "Categoría específica para el resumen",
+          "required": false
+        },
+        "days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 7,
+          "default": 1,
+          "description": "Número de días atrás para incluir en el resumen",
+          "required": false
+        }
+      }
+    },
+    {
+      "name": "generate_content_ideas",
+      "method": "POST",
+      "url": "/generate_content_ideas",
+      "description": "Genera ideas de contenido basadas en tendencias actuales",
+      "parameters": {
+        "content_type": {
+          "type": "string",
+          "enum": ["video", "post", "article", "story"],
+          "default": "video",
+          "description": "Tipo de contenido a generar",
+          "required": false
+        },
+        "category": {
+          "type": "string",
+          "description": "Categoría específica de tendencias",
+          "required": false
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 5,
+          "description": "Número de ideas a generar",
+          "required": false
+        }
+      }
+    }
+  ],
+  "authentication": {
+    "type": "api_key",
+    "header": "X-MCP-API-Key"
+  },
+  "rate_limits": {
+    "requests_per_minute": 60,
+    "requests_per_hour": 1000
+  }
+}
