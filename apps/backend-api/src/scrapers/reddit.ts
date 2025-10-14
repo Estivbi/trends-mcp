@@ -38,8 +38,8 @@ export async function getRedditTrending(category?: string): Promise<any[]> {
   try {
     logger.info('🔍 Fetching Reddit trending data...');
 
-    // For development, we'll use mock data
-    // In production, you could use Reddit API or web scraping
+  // Para desarrollo se usan datos simulados
+  // En producción se puede usar la API de Reddit o hacer scraping
     return getMockRedditData(category);
 
   } catch (error) {
@@ -106,7 +106,7 @@ function getMockRedditData(category?: string): any[] {
   return category ? mockPosts.filter(p => p.category === category) : mockPosts;
 }
 
-// Keep original function for backward compatibility
+// Se mantiene la función original para compatibilidad con versiones anteriores
 export async function scrapeRedditTrending(): Promise<number> {
   const trends = await getRedditTrending();
   return trends.length;

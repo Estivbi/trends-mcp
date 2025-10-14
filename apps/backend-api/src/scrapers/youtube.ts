@@ -36,7 +36,7 @@ const CATEGORY_MAPPING: Record<string, string> = {
   '28': 'ciencia'
 };
 
-// New function that returns trending data directly
+// Nueva función que devuelve datos de tendencias directamente
 export async function getYouTubeTrending(category?: string): Promise<any[]> {
   try {
     const apiKey = config.youtubeApiKey;
@@ -107,7 +107,7 @@ export async function getYouTubeTrending(category?: string): Promise<any[]> {
   }
 }
 
-// Mock data for development/fallback
+// Datos simulados para desarrollo o como respaldo
 function getMockYouTubeData(category?: string): any[] {
   const mockVideos = [
     {
@@ -172,7 +172,7 @@ function calculateYouTubeScore(views: number, likes: number, comments: number): 
   return Math.round(baseScore + engagementBoost);
 }
 
-// Keep original function for backward compatibility
+// Se mantiene la función original para compatibilidad con versiones anteriores
 export async function scrapeYouTubeTrending(): Promise<number> {
   const trends = await getYouTubeTrending();
   return trends.length;

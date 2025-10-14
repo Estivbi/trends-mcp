@@ -4,8 +4,8 @@ export async function getTwitterTrending(category?: string): Promise<any[]> {
   try {
     logger.info('🔍 Fetching Twitter/X trending data...');
 
-    // For development, using mock data
-    // In production, you'd use Twitter API v2 or web scraping
+  // Para desarrollo se usan datos simulados
+  // En producción se puede usar la API de Twitter v2 o hacer scraping
     return getMockTwitterData(category);
 
   } catch (error) {
@@ -69,7 +69,7 @@ function getMockTwitterData(category?: string): any[] {
   return category ? mockTweets.filter(t => t.category === category) : mockTweets;
 }
 
-// Keep original function for backward compatibility
+// Se mantiene la función original para compatibilidad con versiones anteriores
 export async function scrapeTwitterTrending(): Promise<number> {
   const trends = await getTwitterTrending();
   return trends.length;

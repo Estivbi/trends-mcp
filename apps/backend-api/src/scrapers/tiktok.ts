@@ -4,8 +4,8 @@ export async function getTikTokTrending(category?: string): Promise<any[]> {
   try {
     logger.info('🔍 Fetching TikTok trending data...');
 
-    // For development, using mock data
-    // In production, you'd use TikTok Research API or web scraping
+  // Para desarrollo se usa datos simulados
+  // En producción se debería usar la API de TikTok Research o hacer scraping
     return getMockTikTokData(category);
 
   } catch (error) {
@@ -75,7 +75,7 @@ function getMockTikTokData(category?: string): any[] {
   return category ? mockTikToks.filter(t => t.category === category) : mockTikToks;
 }
 
-// Keep original function for backward compatibility
+// Se mantiene la función original para compatibilidad con versiones anteriores
 export async function scrapeTikTokTrending(): Promise<number> {
   const trends = await getTikTokTrending();
   return trends.length;
