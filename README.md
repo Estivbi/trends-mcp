@@ -1,4 +1,4 @@
-# 🚀 Trends MCP (SaaS Radar de Tendencias Tempranas)
+# 🚀 Trends MCP (SaaS Radar de Tendencias)
 
 Una plataforma modular diseñada para creadores de contenido. Detecta tendencias tempranas, audios virales y temas candentes en tiempo real analizando la "Velocidad de Crecimiento" (Momentum) en múltiples plataformas.
 
