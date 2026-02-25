@@ -11,6 +11,11 @@ import { getRedditTrending } from './scrapers/reddit';
 import { getTwitterTrending } from './scrapers/twitter';
 import { getTikTokTrending } from './scrapers/tiktok';
 
+// Importar adaptadores de la nueva arquitectura de proveedores
+import { redditService } from './providers/reddit.service';
+import { apifyService } from './providers/apify.service';
+import type { TrendItem } from './providers/TrendProvider';
+
 async function startServer() {
   try {
     const app = express();
@@ -126,6 +131,69 @@ async function startServer() {
           success: false,
           error: 'Failed to fetch trends',
           message: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    });
+
+    // GET /trends/unified - Feed unificado usando los adaptadores TrendProvider
+    // Acepta ?platform=youtube|reddit|tiktok|all y devuelve TrendItem[] con momentumScore
+    app.get('/trends/unified', async (req, res) => {
+      try {
+        const {
+          platform = 'all',
+          subreddits,
+          limit = '25',
+          category,
+        } = req.query;
+
+        const limitNum = Math.min(parseInt(limit as string, 10), 100);
+        const subredditList = subreddits
+          ? (subreddits as string).split(',').map((s) => s.trim()).filter(Boolean)
+          : undefined;
+
+        const opts = {
+          limit: limitNum,
+          ...(subredditList ? { subreddits: subredditList } : {}),
+          ...(category ? { category: category as string } : {}),
+        };
+
+        const fetches: Promise<TrendItem[]>[] = [];
+
+        if (platform === 'reddit' || platform === 'all') {
+          fetches.push(redditService.fetchTrends(opts).catch((err) => {
+            logger.error('[/trends/unified] Reddit fetch failed:', err);
+            return [];
+          }));
+        }
+
+        if (platform === 'tiktok' || platform === 'all') {
+          fetches.push(apifyService.fetchTrends(opts).catch((err) => {
+            logger.error('[/trends/unified] Apify/TikTok fetch failed:', err);
+            return [];
+          }));
+        }
+
+        const settled = await Promise.all(fetches);
+        const allItems: TrendItem[] = ([] as TrendItem[]).concat(...settled);
+
+        const sorted = allItems
+          .sort((a, b) => b.momentumScore - a.momentumScore)
+          .slice(0, limitNum);
+
+        return res.json({
+          success: true,
+          items: sorted,
+          total: sorted.length,
+          platform,
+          timestamp: new Date().toISOString(),
+        });
+
+      } catch (error) {
+        logger.error('Error in /trends/unified endpoint:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch unified trends',
+          message: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     });
@@ -266,6 +334,7 @@ async function startServer() {
         available_endpoints: [
           'GET /health',
           'GET /trends',
+          'GET /trends/unified',
           'GET /trends/search',
           'GET /trends/:id'
         ]

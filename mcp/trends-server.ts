@@ -25,7 +25,9 @@ const server = new Server(
 const GetTrendsSchema = z.object({
   category: z.string().optional(),
   date: z.string().optional(), 
+  platform: z.enum(['youtube', 'reddit', 'tiktok', 'all']).optional().default('all'),
   source: z.enum(['youtube', 'twitter', 'tiktok', 'reddit', 'news']).optional(),
+  subreddits: z.string().optional(), // comma-separated list, e.g. "technology,gaming"
   limit: z.number().min(1).max(100).default(20),
 });
 
@@ -50,10 +52,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'get_trends',
-        description: 'Obtiene las tendencias más populares del momento. Puedes filtrar por categoría, fecha, fuente y limitar resultados.',
+        description: 'Obtiene las tendencias más populares del momento. Usa el parámetro platform para elegir la fuente (youtube, reddit, tiktok, all). Devuelve momentumScore para que puedas evaluar tendencias emergentes.',
         inputSchema: {
           type: 'object',
           properties: {
+            platform: {
+              type: 'string',
+              enum: ['youtube', 'reddit', 'tiktok', 'all'],
+              description: 'Plataforma de origen: "reddit" (usa API pública, datos reales), "tiktok" (vía Apify/RapidAPI), "youtube", o "all" para todas. Default: "all".',
+            },
+            subreddits: {
+              type: 'string',
+              description: 'Lista separada por comas de subreddits a escanear, ej: "technology,gaming,worldnews". Solo aplica cuando platform es "reddit" o "all".',
+            },
             category: {
               type: 'string',
               description: 'Categoría de tendencias: moda, tecnología, entretenimiento, deportes, etc.',
@@ -65,7 +76,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             source: {
               type: 'string',
               enum: ['youtube', 'twitter', 'tiktok', 'reddit', 'news'],
-              description: 'Fuente específica de datos para filtrar tendencias',
+              description: '(Legado) Fuente específica de datos. Usa "platform" en su lugar.',
             },
             limit: {
               type: 'number',
@@ -176,23 +187,47 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
 
 async function handleGetTrends(args: any) {
   const validated = GetTrendsSchema.parse(args);
-  const { category, date, source, limit } = validated;
+  const { category, date, platform, source, subreddits, limit } = validated;
 
   try {
-    // Construir URL con parámetros
-    const url = new URL('http://localhost:3001/trends');
-    if (category) url.searchParams.set('category', category);
-    if (date) url.searchParams.set('date', date);
-    if (source) url.searchParams.set('source', source);
-    url.searchParams.set('limit', limit.toString());
+    let items: any[] = [];
+    let total = 0;
 
-    const response = await fetch(url.toString());
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    // Use the unified provider endpoint when platform is specified (reddit/tiktok/all)
+    // It returns TrendItem[] with momentumScore for early-trend evaluation
+    if (platform && platform !== 'all' ? ['reddit', 'tiktok'].includes(platform) : true) {
+      const unifiedUrl = new URL('http://localhost:3001/trends/unified');
+      unifiedUrl.searchParams.set('platform', platform ?? 'all');
+      unifiedUrl.searchParams.set('limit', limit.toString());
+      if (category) unifiedUrl.searchParams.set('category', category);
+      if (subreddits) unifiedUrl.searchParams.set('subreddits', subreddits);
+
+      const unifiedResponse = await fetch(unifiedUrl.toString());
+      if (unifiedResponse.ok) {
+        const unifiedData = await unifiedResponse.json() as any;
+        items = unifiedData.items ?? [];
+        total = unifiedData.total ?? items.length;
+      }
     }
-    
-    const data = await response.json() as any;
+
+    // Fallback / supplement with legacy endpoint for youtube/twitter or when unified is empty
+    if (items.length === 0 || (source && !['reddit', 'tiktok'].includes(source))) {
+      const legacyUrl = new URL('http://localhost:3001/trends');
+      if (category) legacyUrl.searchParams.set('category', category);
+      if (date) legacyUrl.searchParams.set('date', date);
+      if (source) legacyUrl.searchParams.set('source', source);
+      else if (platform && platform !== 'all') legacyUrl.searchParams.set('source', platform);
+      legacyUrl.searchParams.set('limit', limit.toString());
+
+      const legacyResponse = await fetch(legacyUrl.toString());
+      if (legacyResponse.ok) {
+        const legacyData = await legacyResponse.json() as any;
+        if (items.length === 0) {
+          items = legacyData.items ?? [];
+          total = legacyData.total ?? items.length;
+        }
+      }
+    }
 
     return {
       content: [
@@ -200,15 +235,18 @@ async function handleGetTrends(args: any) {
           type: 'text',
           text: JSON.stringify({
             success: true,
-            message: `Encontradas ${data.total || 0} tendencias`,
-            trends: data.items || [],
-            total: data.total || 0,
+            message: `Encontradas ${total} tendencias`,
+            trends: items,
+            total,
             filters_applied: { 
+              platform: platform ?? 'all',
               category: category || 'todas',
               date: date || 'hoy',
               source: source || 'todas las fuentes',
+              subreddits: subreddits || 'default',
               limit 
             },
+            momentum_note: 'momentumScore = upvotes/hora (Reddit) o playCount (TikTok). Valores más altos = tendencia más emergente.',
             timestamp: new Date().toISOString()
           }, null, 2)
         }
