@@ -22,10 +22,13 @@ const server = new Server(
 );
 
 // Esquemas de validación con Zod
+const VALID_PLATFORMS = ['youtube', 'reddit', 'tiktok', 'all'] as const;
+
 const GetTrendsSchema = z.object({
   category: z.string().optional(),
-  date: z.string().optional(), 
-  source: z.enum(['youtube', 'twitter', 'tiktok', 'reddit', 'news']).optional(),
+  date: z.string().optional(),
+  platform: z.enum(VALID_PLATFORMS).optional().default('all'),
+  subreddits: z.string().optional(), // comma-separated list, e.g. "technology,gaming"
   limit: z.number().min(1).max(100).default(20),
 });
 
@@ -50,22 +53,26 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'get_trends',
-        description: 'Obtiene las tendencias más populares del momento. Puedes filtrar por categoría, fecha, fuente y limitar resultados.',
+        description: 'Obtiene las tendencias más populares del momento. Usa el parámetro platform para elegir la fuente (youtube, reddit, tiktok, all). Devuelve momentumScore para que puedas evaluar tendencias emergentes.',
         inputSchema: {
           type: 'object',
           properties: {
+            platform: {
+              type: 'string',
+              enum: ['youtube', 'reddit', 'tiktok', 'all'],
+              description: 'Plataforma de origen: "reddit" (usa API pública, datos reales), "tiktok" (vía Apify/RapidAPI), "youtube", o "all" para todas. Default: "all".',
+            },
+            subreddits: {
+              type: 'string',
+              description: 'Lista separada por comas de subreddits a escanear, ej: "technology,gaming,worldnews". Solo aplica cuando platform es "reddit" o "all".',
+            },
             category: {
               type: 'string',
               description: 'Categoría de tendencias: moda, tecnología, entretenimiento, deportes, etc.',
             },
             date: {
-              type: 'string', 
-              description: 'Fecha específica en formato YYYY-MM-DD para obtener tendencias de ese día',
-            },
-            source: {
               type: 'string',
-              enum: ['youtube', 'twitter', 'tiktok', 'reddit', 'news'],
-              description: 'Fuente específica de datos para filtrar tendencias',
+              description: 'Fecha específica en formato YYYY-MM-DD para obtener tendencias de ese día',
             },
             limit: {
               type: 'number',
@@ -176,23 +183,30 @@ server.setRequestHandler(CallToolRequestSchema, async (request: any) => {
 
 async function handleGetTrends(args: any) {
   const validated = GetTrendsSchema.parse(args);
-  const { category, date, source, limit } = validated;
+  const { category, date, platform, subreddits, limit } = validated;
+
+  // Validate platform value (Zod already enforces the enum, but guard for runtime safety)
+  if (!VALID_PLATFORMS.includes(platform as typeof VALID_PLATFORMS[number])) {
+    throw new Error(`Invalid platform "${platform}". Must be one of: ${VALID_PLATFORMS.join(', ')}`);
+  }
 
   try {
-    // Construir URL con parámetros
-    const url = new URL('http://localhost:3001/trends');
-    if (category) url.searchParams.set('category', category);
-    if (date) url.searchParams.set('date', date);
-    if (source) url.searchParams.set('source', source);
-    url.searchParams.set('limit', limit.toString());
+    // All platforms route through the unified endpoint which returns TrendItem[] with momentumScore
+    const unifiedUrl = new URL('http://localhost:3001/trends/unified');
+    unifiedUrl.searchParams.set('platform', platform);
+    unifiedUrl.searchParams.set('limit', limit.toString());
+    if (category) unifiedUrl.searchParams.set('category', category);
+    if (subreddits) unifiedUrl.searchParams.set('subreddits', subreddits);
+    if (date) unifiedUrl.searchParams.set('date', date);
 
-    const response = await fetch(url.toString());
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    const unifiedResponse = await fetch(unifiedUrl.toString());
+    if (!unifiedResponse.ok) {
+      throw new Error(`HTTP ${unifiedResponse.status}: ${unifiedResponse.statusText}`);
     }
-    
-    const data = await response.json() as any;
+
+    const data = await unifiedResponse.json() as any;
+    const items: any[] = data.items ?? [];
+    const total: number = data.total ?? items.length;
 
     return {
       content: [
@@ -200,15 +214,17 @@ async function handleGetTrends(args: any) {
           type: 'text',
           text: JSON.stringify({
             success: true,
-            message: `Encontradas ${data.total || 0} tendencias`,
-            trends: data.items || [],
-            total: data.total || 0,
-            filters_applied: { 
+            message: `Encontradas ${total} tendencias`,
+            trends: items,
+            total,
+            filters_applied: {
+              platform,
               category: category || 'todas',
               date: date || 'hoy',
-              source: source || 'todas las fuentes',
-              limit 
+              subreddits: subreddits || 'default',
+              limit
             },
+            momentum_note: 'momentumScore = upvotes/hora (Reddit) o playCount (TikTok). Valores más altos = tendencia más emergente.',
             timestamp: new Date().toISOString()
           }, null, 2)
         }

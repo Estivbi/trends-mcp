@@ -11,6 +11,11 @@ import { getRedditTrending } from './scrapers/reddit';
 import { getTwitterTrending } from './scrapers/twitter';
 import { getTikTokTrending } from './scrapers/tiktok';
 
+// Importar adaptadores de la nueva arquitectura de proveedores
+import { redditService } from './providers/reddit.service';
+import { apifyService } from './providers/apify.service';
+import type { TrendItem } from './providers/TrendProvider';
+
 async function startServer() {
   try {
     const app = express();
@@ -126,6 +131,103 @@ async function startServer() {
           success: false,
           error: 'Failed to fetch trends',
           message: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    });
+
+    // GET /trends/unified - Feed unificado usando los adaptadores TrendProvider
+    // Acepta ?platform=youtube|reddit|tiktok|all y devuelve TrendItem[] con momentumScore
+    app.get('/trends/unified', async (req, res) => {
+      try {
+        const {
+          platform = 'all',
+          subreddits,
+          limit = '25',
+          category,
+        } = req.query;
+
+        const limitNum = Math.min(parseInt(limit as string, 10), 100);
+        const subredditList = subreddits
+          ? (subreddits as string).split(',').map((s) => s.trim()).filter(Boolean)
+          : undefined;
+
+        // Validate subreddit names against Reddit's naming rules (3-21 chars, alphanumeric + underscore)
+        if (subredditList && subredditList.length > 0) {
+          const subredditNameRegex = /^[A-Za-z0-9_]{3,21}$/;
+          const invalidSubreddits = subredditList.filter((name) => !subredditNameRegex.test(name));
+          if (invalidSubreddits.length > 0) {
+            logger.warn(`[/trends/unified] Invalid subreddit names received: ${invalidSubreddits.join(',')}`);
+            return res.status(400).json({
+              success: false,
+              error: 'Invalid subreddit parameter',
+              message: 'Each subreddit name must be 3-21 characters long and contain only letters, numbers, or underscores.',
+              invalidSubreddits,
+            });
+          }
+        }
+
+        const opts = {
+          limit: limitNum,
+          ...(subredditList ? { subreddits: subredditList } : {}),
+          ...(category ? { category: category as string } : {}),
+        };
+
+        const fetches: Promise<TrendItem[]>[] = [];
+
+        if (platform === 'youtube' || platform === 'all') {
+          fetches.push(
+            getYouTubeTrending(category as string | undefined).then((trends) =>
+              trends.map((t) => ({
+                id: t.id ?? `youtube_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                title: t.title,
+                source: 'youtube' as const,
+                url: t.url,
+                momentumScore: t.score ?? 0,
+                type: 'video' as const,
+                timestamp: t.meta?.publishedAt ?? new Date().toISOString(),
+              }))
+            ).catch((err) => {
+              logger.error('[/trends/unified] YouTube fetch failed:', err);
+              return [];
+            })
+          );
+        }
+
+        if (platform === 'reddit' || platform === 'all') {
+          fetches.push(redditService.fetchTrends(opts).catch((err) => {
+            logger.error('[/trends/unified] Reddit fetch failed:', err);
+            return [];
+          }));
+        }
+
+        if (platform === 'tiktok' || platform === 'all') {
+          fetches.push(apifyService.fetchTrends(opts).catch((err) => {
+            logger.error('[/trends/unified] Apify/TikTok fetch failed:', err);
+            return [];
+          }));
+        }
+
+        const settled = await Promise.all(fetches);
+        const allItems: TrendItem[] = ([] as TrendItem[]).concat(...settled);
+
+        const sorted = allItems
+          .sort((a, b) => b.momentumScore - a.momentumScore)
+          .slice(0, limitNum);
+
+        return res.json({
+          success: true,
+          items: sorted,
+          total: sorted.length,
+          platform,
+          timestamp: new Date().toISOString(),
+        });
+
+      } catch (error) {
+        logger.error('Error in /trends/unified endpoint:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to fetch unified trends',
+          message: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     });
@@ -266,6 +368,7 @@ async function startServer() {
         available_endpoints: [
           'GET /health',
           'GET /trends',
+          'GET /trends/unified',
           'GET /trends/search',
           'GET /trends/:id'
         ]
