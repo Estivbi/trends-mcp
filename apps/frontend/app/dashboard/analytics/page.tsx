@@ -11,15 +11,20 @@ import {
   mockSourceDistribution,
 } from "@/lib/mockData";
 
-const avgMomentum = Math.round(
-  mockTrends.reduce((acc, t) => acc + t.momentumScore, 0) / mockTrends.length
-);
+const avgMomentum =
+  mockTrends.length > 0
+    ? Math.round(
+        mockTrends.reduce((acc, t) => acc + t.momentumScore, 0) /
+          mockTrends.length
+      )
+    : 0;
 
 const audioCount = mockTrends.filter((t) => t.type === "audio").length;
 
-const topSource = mockSourceDistribution.reduce((a, b) =>
-  a.value > b.value ? a : b
-);
+const topSource =
+  mockSourceDistribution.length > 0
+    ? mockSourceDistribution.reduce((a, b) => (a.value > b.value ? a : b))
+    : { name: "—", value: 0 };
 
 export default function AnalyticsPage() {
   return (
