@@ -1,188 +1,28 @@
-# MCP Trends Monitoring Platform
+# 🚀 Trends MCP (SaaS Radar de Tendencias Tempranas)
 
-Una plataforma de monitorización de tendencias con integración MCP (Model Context Protocol) para Claude Desktop y otros LLMs.
+Una plataforma modular diseñada para creadores de contenido. Detecta tendencias tempranas, audios virales y temas candentes en tiempo real analizando la "Velocidad de Crecimiento" (Momentum) en múltiples plataformas.
 
-## 🏗️ Arquitectura
+## 🏗️ Arquitectura del Proyecto (Monorepo)
 
-```
-[Claude Desktop] ↔ [MCP Server (STDIO)] ↔ [Backend API] ↔ [APIs Reales]
-       ↓                     ↓                    ↓             ↓
-   [Chat IA]          [4 Herramientas]     [Puerto 3001]  [YouTube, Reddit, etc]
-                  
-[MCP Inspector] ← [MCP Server] (Desarrollo y Testing)
-```
+Este repositorio contiene el motor completo del SaaS, dividido en tres piezas clave:
 
-### **Casos de Uso:**
-- 🆓 **Claude Desktop**: Gratis, sin límites, perfecto para uso personal
-- 🔧 **MCP Inspector**: Desarrollo y testing de herramientas
-- 🚀 **APIs Reales**: YouTube, Reddit, Twitter (eliminando mock data)
+* **/apps/frontend**: Dashboard Premium (Next.js 14 App Router + Tailwind + Recharts).
+* **/apps/backend-api**: Motor Multi-Fuente (Node.js + Express) ejecutándose en el puerto 3001.
+* **/mcp**: Servidor Model Context Protocol (STDIO) para integración con LLMs como Claude Desktop.
 
-## 📁 Estructura del Proyecto
+## 🧠 Capacidades Core
 
-```
-trends-mcp/
-├── apps/
-│   ├── frontend-astro/         # Web Interface (opcional)
-│   └── backend-api/            # API Node.js + Express (puerto 3001)
-├── mcp/                        # Servidor MCP STDIO ✅
-├── docs/                       # Documentación y guías
-│   ├── claude-desktop-setup.md # Setup Claude Desktop GRATIS
-│   ├── real-apis-implementation.md # Plan APIs reales  
-│   └── llm-strategy.md         # Estrategia LLM híbrida
-└── .github/                    # CI/CD workflows
-```
+* **Motor Multi-Fuente:** Adaptadores integrados para YouTube Data API v3 y Reddit API (Rising). Preparado para integraciones futuras.
+* **Momentum Scoring:** Algoritmo propietario que calcula la velocidad de viralidad basándose en el ratio visualizaciones/tiempo.
+* **Protección de Cuotas (Caché):** Sistema inteligente de caché en memoria (TTL) para evitar bloqueos y optimizar costes de API externas.
+* **Dashboard Premium:** Interfaz oscura, minimalista y profesional para la visualización de datos.
 
-## 🚀 Inicio Rápido
+## 🛠️ Stack Tecnológico
 
-### Prerrequisitos
-- Node.js >= 18
-- npm >= 9
-- Claude Desktop (gratis) - **Recomendado**
+* **Frontend:** Next.js 14, React, Tailwind CSS, shadcn/ui, Recharts.
+* **Backend:** Node.js, Express, TypeScript, Axios.
+* **Integración IA:** Model Context Protocol (MCP) SDK.
 
-### Instalación Rápida
+## ⚙️ Configuración y Arranque
 
-1. **Clonar e instalar dependencias:**
-   ```bash
-   npm install
-   ```
-
-2. **Iniciar backend API:**
-   ```bash
-   cd apps/backend-api
-   PORT=3001 npm run dev
-   ```
-
-3. **Configurar Claude Desktop (GRATIS):**
-   ```bash
-   # Ver guía completa en docs/claude-desktop-setup.md
-   # Descargar: https://claude.ai/download
-   # Configurar: ~/Library/Application Support/Claude/claude_desktop_config.json
-   ```
-
-4. **Probar con MCP Inspector:**
-   ```bash
-   cd mcp && npm run inspector
-   ```
-
-### URLs de Desarrollo
-- **Backend API**: http://localhost:3001
-- **MCP Inspector**: http://localhost:3001 (cuando se ejecuta inspector)
-- **Claude Desktop**: App local (gratis, sin límites)
-
-## 🔧 Comandos Disponibles
-
-```bash
-# Desarrollo Principal
-npm run dev:backend        # Backend API en puerto 3001 
-cd mcp && npm run inspector # MCP Inspector para testing 
-
-# MCP Server
-npm run dev:mcp           # MCP server STDIO
-npm run build:mcp         # Compilar MCP server
-
-# Frontend (opcional)
-npm run dev:frontend      # Frontend Astro
-npm run build:frontend    # Build frontend
-
-# Todos los servicios
-npm run dev               # Backend + Frontend + MCP
-npm run build             # Build completo
-
-# Testing
-npm run test             # Tests backend
-npm run lint             # Linting TypeScript
-```
-
-## 📊 Características
-
-### ✅ Estado Actual (Funcional)
-- ✅ **MCP Server**: 4 herramientas funcionando (get_trends, search_trends, etc.)
-- ✅ **Backend API**: Puerto 3001, endpoints REST, mock data
-- ✅ **MCP Inspector**: Testing completo de herramientas
-- ✅ **Claude Desktop**: Configuración documentada y lista
-
-### 🔄 En Desarrollo (Prioridad)
-- [ ] **YouTube Data API v3**: Eliminar mock data, datos reales España
-- [ ] **Reddit API**: Posts trending con OAuth
-- [ ] **Twitter/X API v2**: Hashtags trending
-- [ ] **Cache inteligente**: Fallbacks y rate limiting
-
-### 🔮 Futuro
-- Claude Desktop configurado y funcionando completamente
-- Análisis de sentimientos con LLM local
-- Web interface opcional para dashboards
-- APIs adicionales (TikTok, Instagram, Google Trends)
-
-## 🛠️ Tecnologías
-
-- **LLM Interface**: Claude Desktop (gratis, sin límites)
-- **MCP Server**: Model Context Protocol + STDIO transport
-- **Backend**: Node.js + Express + TypeScript (puerto 3001)
-- **APIs Reales**: YouTube Data API v3, Reddit API, Twitter API v2
-- **Sin Base de Datos**: Llamadas directas a APIs, cache en memoria
-- **Frontend**: Astro + TypeScript + Tailwind CSS (opcional)
-- **Development**: MCP Inspector, tsx, TypeScript
-- **Testing**: Jest + Supertest
-
-## 📝 Variables de Entorno
-
-```env
-# Backend API
-PORT=3001
-NODE_ENV=development
-JWT_SECRET=tu-jwt-secret-super-seguro
-CORS_ORIGIN=http://localhost:4321
-
-# APIs Reales (configurar gradualmente)
-YOUTUBE_API_KEY=tu-youtube-api-key
-TWITTER_BEARER_TOKEN=tu-twitter-bearer-token  
-REDDIT_CLIENT_ID=tu-reddit-client-id
-REDDIT_CLIENT_SECRET=tu-reddit-client-secret
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-LOG_LEVEL=info
-```
-
-**Nota**: Claude Desktop no requiere API keys - es completamente gratis
-
-## 📚 Documentación
-
-- 🆓 **[Claude Desktop Setup](docs/claude-desktop-setup.md)** - Configuración completa GRATIS
-- 📊 **[APIs Reales Implementation](docs/real-apis-implementation.md)** - Plan detallado
-- 🤖 **[LLM Strategy](docs/llm-strategy.md)** - Estrategia híbrida gratuita
-- 📋 **[API Specification](docs/api-spec.md)** - Endpoints del backend
-
-## 🤝 Contribuir
-
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la licencia MIT. Ver `LICENSE` para más detalles.
-
-## 🚀 Quick Start con Claude Desktop
-
-1. **Backend funcionando:**
-   ```bash
-   cd apps/backend-api && PORT=3001 npm run dev
-   ```
-
-2. **Descargar Claude Desktop:** https://claude.ai/download
-
-3. **Configurar MCP:** Ver [docs/claude-desktop-setup.md](docs/claude-desktop-setup.md)
-
-4. **Probar herramientas:**
-   ```
-   Claude: "¿Qué tendencias están viral en YouTube ahora?"
-   Claude: "Genera 5 ideas de video basadas en tendencias actuales"
-   ```
-
----
-
-**¡Construido con ❤️ para Claude Desktop + MCP + APIs reales!**
+Para instrucciones detalladas sobre cómo obtener las API Keys y levantar el entorno de desarrollo, consulta el archivo [SETUP.md](./SETUP.md).
