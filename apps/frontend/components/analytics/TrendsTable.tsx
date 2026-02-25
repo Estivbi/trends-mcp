@@ -11,17 +11,17 @@ const sourceColors: Record<TrendSource, string> = {
   youtube: "text-red-400 bg-red-400/10",
   tiktok: "text-indigo-400 bg-indigo-400/10",
   reddit: "text-orange-400 bg-orange-400/10",
-  twitter: "text-sky-400 bg-sky-400/10",
-  news: "text-emerald-400 bg-emerald-400/10",
+  instagram: "text-pink-400 bg-pink-400/10",
 };
 
 function MomentumBar({ score }: { score: number }) {
+  const normalizedScore = Math.max(0, Math.min(100, score));
   return (
     <div className="flex items-center gap-3 min-w-[100px]">
       <div className="flex-1 h-1.5 bg-stibios-border rounded-full overflow-hidden">
         <div
           className="h-full bg-stibios-accent rounded-full transition-all"
-          style={{ width: `${score}%` }}
+          style={{ width: `${normalizedScore}%` }}
         />
       </div>
       <span className="text-stibios-text text-xs font-semibold w-6 text-right">

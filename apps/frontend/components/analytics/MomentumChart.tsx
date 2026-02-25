@@ -61,7 +61,6 @@ export function MomentumChart({ data }: MomentumChartProps) {
             tick={{ fill: "#64748b", fontSize: 11 }}
             axisLine={false}
             tickLine={false}
-            domain={[0, 100]}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#1e1e2e" }} />
           <Line

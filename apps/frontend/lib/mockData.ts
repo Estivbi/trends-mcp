@@ -23,7 +23,7 @@ export const mockTrends: TrendItem[] = [
     source: "reddit",
     url: "https://reddit.com/r/music/top",
     momentumScore: 84,
-    type: "text",
+    type: "keyword",
   },
   {
     id: "4",
@@ -39,7 +39,7 @@ export const mockTrends: TrendItem[] = [
     source: "tiktok",
     url: "https://tiktok.com/tag/trendingnow",
     momentumScore: 73,
-    type: "hashtag",
+    type: "keyword",
   },
 ];
 
@@ -63,5 +63,5 @@ export const mockSourceDistribution = [
   { name: "YouTube", value: 38, color: "#ef4444" },
   { name: "TikTok", value: 35, color: "#6366f1" },
   { name: "Reddit", value: 18, color: "#f97316" },
-  { name: "Twitter", value: 9, color: "#38bdf8" },
+  { name: "Instagram", value: 9, color: "#ec4899" },
 ];
