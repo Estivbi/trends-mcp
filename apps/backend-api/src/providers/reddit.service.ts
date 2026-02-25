@@ -95,13 +95,16 @@ export class RedditService implements TrendProvider {
     );
 
     const items: TrendItem[] = [];
-    for (const result of results) {
+    results.forEach((result, i) => {
       if (result.status === 'fulfilled') {
         items.push(...result.value);
       } else {
-        logger.warn('[RedditService] Failed to fetch subreddit:', result.reason);
+        logger.warn(
+          `[RedditService] Failed to fetch subreddit r/${subreddits[i]}:`,
+          result.reason
+        );
       }
-    }
+    });
 
     return items.sort((a, b) => b.momentumScore - a.momentumScore);
   }

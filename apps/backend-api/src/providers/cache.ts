@@ -10,8 +10,19 @@ interface CacheEntry<T> {
 }
 
 const DEFAULT_TTL_MS = 20 * 60 * 1000; // 20 minutes
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 const store = new Map<string, CacheEntry<unknown>>();
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let cleanupTimer: any = (globalThis as any).setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of store) {
+    if (now > entry.expiresAt) {
+      store.delete(key);
+    }
+  }
+}, CLEANUP_INTERVAL_MS);
 
 export const cache = {
   get<T>(key: string): T | null {
@@ -36,5 +47,13 @@ export const cache = {
   /** Clear all entries — useful in tests. */
   clear(): void {
     store.clear();
+  },
+
+  /** Stop the background cleanup interval — call this in tests or on graceful shutdown. */
+  destroy(): void {
+    if (cleanupTimer !== null) {
+      (globalThis as any).clearInterval(cleanupTimer); // eslint-disable-line @typescript-eslint/no-explicit-any
+      cleanupTimer = null;
+    }
   },
 };

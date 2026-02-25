@@ -151,6 +151,21 @@ async function startServer() {
           ? (subreddits as string).split(',').map((s) => s.trim()).filter(Boolean)
           : undefined;
 
+        // Validate subreddit names against Reddit's naming rules (3-21 chars, alphanumeric + underscore)
+        if (subredditList && subredditList.length > 0) {
+          const subredditNameRegex = /^[A-Za-z0-9_]{3,21}$/;
+          const invalidSubreddits = subredditList.filter((name) => !subredditNameRegex.test(name));
+          if (invalidSubreddits.length > 0) {
+            logger.warn(`[/trends/unified] Invalid subreddit names received: ${invalidSubreddits.join(',')}`);
+            return res.status(400).json({
+              success: false,
+              error: 'Invalid subreddit parameter',
+              message: 'Each subreddit name must be 3-21 characters long and contain only letters, numbers, or underscores.',
+              invalidSubreddits,
+            });
+          }
+        }
+
         const opts = {
           limit: limitNum,
           ...(subredditList ? { subreddits: subredditList } : {}),
@@ -158,6 +173,25 @@ async function startServer() {
         };
 
         const fetches: Promise<TrendItem[]>[] = [];
+
+        if (platform === 'youtube' || platform === 'all') {
+          fetches.push(
+            getYouTubeTrending(category as string | undefined).then((trends) =>
+              trends.map((t) => ({
+                id: t.id ?? `youtube_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                title: t.title,
+                source: 'youtube' as const,
+                url: t.url,
+                momentumScore: t.score ?? 0,
+                type: 'video' as const,
+                timestamp: t.meta?.publishedAt ?? new Date().toISOString(),
+              }))
+            ).catch((err) => {
+              logger.error('[/trends/unified] YouTube fetch failed:', err);
+              return [];
+            })
+          );
+        }
 
         if (platform === 'reddit' || platform === 'all') {
           fetches.push(redditService.fetchTrends(opts).catch((err) => {
